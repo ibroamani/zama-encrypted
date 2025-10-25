@@ -1,96 +1,166 @@
-:root{
-  --bg1:#1f1f1f;
-  --card:#2b2b2b;
-  --accent:#ffc600;
-  --muted:#bfc3d6;
-  --glass: rgba(255,255,255,0.04);
-  --primary:#5563de;
+body {
+  margin: 0;
+  background: #0f0f0f;
+  font-family: "Segoe UI", sans-serif;
+  color: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
 }
 
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial;color:#eee;background:linear-gradient(90deg,#111,#1a1a1a)}
-.card{
-  width:92%;
-  max-width:1100px;
-  background:var(--card);
-  border-radius:12px;
-  padding:18px;
-  margin:28px auto;
-  box-shadow:0 10px 30px rgba(0,0,0,0.6);
-  position:relative;
-  overflow:hidden;
+header {
+  text-align: center;
+  padding: 30px 15px;
+  border-bottom: 1px solid #222;
 }
 
-/* top progress (shows step progression) */
-.progress-top{
-  height:8px;
-  background:rgba(255,255,255,0.06);
-  width:100%;
-  position:absolute;
-  top:0;left:0;
-}
-.progress-top-bar{
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,var(--accent),#ffda6a);
-  transition:width 400ms ease;
+header h1 {
+  color: #ffcc00;
+  font-size: 26px;
 }
 
-/* header */
-header{padding:18px 8px}
-h1{margin:0 0 6px;font-size:20px;color:#fff}
-main{display:flex;gap:20px;padding:12px 8px;align-items:flex-start}
-
-/* layout: left column text and right column upload area */
-.step{flex:1;display:none}
-.step.active{display:block}
-
-/* drop zone */
-.drop-zone{
-  background:var(--glass);
-  border:2px dashed rgba(255,255,255,0.06);
-  border-radius:8px;
-  padding:28px;
-  text-align:center;
-  cursor:pointer;
-  transition:transform .15s ease,background .15s ease;
+header p {
+  color: #aaa;
+  margin-top: 8px;
 }
-.drop-zone:hover{transform:translateY(-4px);background:rgba(255,255,255,0.06)}
-.drop-icon{font-size:30px;margin-bottom:6px;color:var(--muted)}
-.drop-text{color:var(--muted)}
-.drop-zone input[type="file"]{display:none}
 
-/* preview */
-.preview-wrap{margin-top:16px;text-align:left}
-.preview-wrap img{max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.04)}
+main {
+  width: 90%;
+  max-width: 600px;
+  margin-top: 30px;
+}
 
-/* controls */
-.controls{display:flex;gap:12px;justify-content:flex-end;margin-top:18px}
-.btn{padding:10px 14px;border-radius:8px;background:transparent;color:#eee;border:1px solid rgba(255,255,255,0.06);cursor:pointer}
-.btn.primary{background:var(--primary);border-color:var(--primary);color:white}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
+.step {
+  display: none;
+  background: #1a1a1a;
+  padding: 35px;
+  border-radius: 15px;
+  box-shadow: 0 0 25px rgba(255, 204, 0, 0.1);
+  margin-bottom: 30px;
+}
 
-/* labels */
-.label{display:block;margin-top:14px;color:var(--muted)}
-.label input{display:block;width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff}
+.step.active {
+  display: block;
+}
 
-/* encryption progress */
-.progress-section{margin-top:16px}
-.progress-text{color:var(--muted);margin-bottom:6px}
-.progress-bar{height:12px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden}
-.progress-fill{width:0%;height:100%;background:linear-gradient(90deg,var(--accent),#ffd86b);transition:width 120ms linear}
+.upload-box {
+  background: #202020;
+  border: 3px dashed #ffcc00;
+  border-radius: 15px;
+  padding: 60px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px auto;
+  max-width: 400px;
+}
 
-/* decrypt result */
-.decrypt-result{margin-top:16px}
-.decrypt-result h4{color:#fff}
-.decrypt-result img{max-width:100%;margin-top:12px;border-radius:8px}
-.cipher-preview{background:rgba(255,255,255,0.03);padding:10px;margin-top:12px;border-radius:6px;color:#ddd;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow:auto}
+.upload-box:hover {
+  background: #2b2b2b;
+}
 
-/* footer */
-footer{margin-top:18px;padding:10px;text-align:center;color:var(--muted);font-size:13px}
+.upload-text {
+  font-size: 18px;
+  color: #ccc;
+}
 
-/* responsive */
-@media (max-width:900px){
-  main{padding:6px;flex-direction:column}
-  .controls{justify-content:center}
+#preview,
+#decryptedPreview {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 10px;
+}
+
+input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin: 15px 0;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #222;
+  color: #fff;
+  font-size: 15px;
+}
+
+.filters {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+
+.filters label {
+  font-size: 14px;
+  color: #ddd;
+  margin: 5px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #333;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 15px 0;
+}
+
+.progress {
+  height: 100%;
+  width: 0%;
+  background: #ffcc00;
+  transition: width 0.3s ease;
+}
+
+.btn {
+  background: #ffcc00;
+  border: none;
+  color: #000;
+  padding: 10px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  display: block;
+  margin: 15px auto 0 auto;
+  transition: background 0.3s ease;
+}
+
+.btn:hover {
+  background: #e6b800;
+}
+
+.btn.small {
+  width: fit-content;
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+.hidden {
+  display: none;
+}
+
+#decryptStatus {
+  text-align: center;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+footer {
+  color: #555;
+  text-align: center;
+  font-size: 14px;
+  margin: 30px 0;
+}
+
+footer a {
+  color: #ffcc00;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
 }

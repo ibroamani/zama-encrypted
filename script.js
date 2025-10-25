@@ -1,241 +1,120 @@
-// script.js - browser encryption demo using Web Crypto API (PBKDF2 + AES-GCM)
-// - No server. All runs locally in the browser.
-// - For demo: stores ciphertext & parameters in memory only (not persisted unless you change).
+let imageData = null;
+let encryptedData = null;
+let iv = null;
+let key = null;
+let selectedFilters = [];
 
-/* helper conversions */
-function bufToBase64(buffer){
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-}
-function base64ToBuf(b64){
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
-  return arr.buffer;
-}
-function bufToHex(buffer){
-  return Array.from(new Uint8Array(buffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
+const fileInput = document.getElementById("fileInput");
+const preview = document.getElementById("preview");
+const next1 = document.getElementById("next1");
+const next2 = document.getElementById("next2");
+const encryptBtn = document.getElementById("encryptBtn");
+const decryptBtn = document.getElementById("decryptBtn");
+const restart = document.getElementById("restart");
+const applyFilter = document.getElementById("applyFilter");
 
-// DOM
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const previewWrap = document.getElementById('previewWrap');
-const filePreview = document.getElementById('filePreview');
-const toStep2 = document.getElementById('toStep2');
-
-const step1 = document.getElementById('step1');
-const step2 = document.getElementById('step2');
-const step3 = document.getElementById('step3');
-
-const passwordEl = document.getElementById('password');
-const passwordConfirmEl = document.getElementById('passwordConfirm');
-const startEncrypt = document.getElementById('startEncrypt');
-const backTo1 = document.getElementById('backTo1');
-
-const encProgressSection = document.getElementById('encProgressSection');
-const encProgress = document.getElementById('encProgress');
-const encProgressText = document.getElementById('encProgressText');
-
-const decryptPassword = document.getElementById('decryptPassword');
-const tryDecrypt = document.getElementById('tryDecrypt');
-const backTo2 = document.getElementById('backTo2');
-
-const decryptResult = document.getElementById('decryptResult');
-const decryptStatus = document.getElementById('decryptStatus');
-const decryptedImage = document.getElementById('decryptedImage');
-const cipherPreview = document.getElementById('cipherPreview');
-
-const topProgress = document.getElementById('topProgress');
-
-// state storage (in-memory)
-let originalFile = null;
-let originalArrayBuffer = null;
-let encryptedPackage = null; // {cipherBase64, ivBase64, saltBase64, algo, tagLength}
-let currentStep = 1;
-
-// drag & drop UX
-dropZone.addEventListener('click', ()=> fileInput.click());
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.transform='translateY(-4px)' });
-dropZone.addEventListener('dragleave', ()=> dropZone.style.transform='');
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.style.transform='';
-  const f = e.dataTransfer.files[0];
-  if (f) handleFile(f);
-});
-fileInput.addEventListener('change', e=> {
-  if (e.target.files[0]) handleFile(e.target.files[0]);
-});
-
-function handleFile(file){
-  if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
-  originalFile = file;
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
   const reader = new FileReader();
-  reader.onload = (ev) => {
-    originalArrayBuffer = ev.target.result;
-    filePreview.src = URL.createObjectURL(file);
-    previewWrap.classList.remove('hidden');
-    toStep2.disabled = false;
+  reader.onload = () => {
+    preview.src = reader.result;
+    preview.classList.remove("hidden");
+    next1.classList.remove("hidden");
+    imageData = reader.result;
   };
-  reader.readAsArrayBuffer(file);
-}
-
-/* navigation */
-toStep2.addEventListener('click', () => goToStep(2));
-backTo1.addEventListener('click', () => goToStep(1));
-backTo2.addEventListener('click', () => goToStep(2));
-
-function goToStep(n){
-  currentStep = n;
-  step1.classList.toggle('active', n===1);
-  step2.classList.toggle('active', n===2);
-  step3.classList.toggle('active', n===3);
-  updateTopProgress();
-}
-
-/* enable encrypt button only if password match and file exists */
-passwordEl.addEventListener('input', validatePasswords);
-passwordConfirmEl.addEventListener('input', validatePasswords);
-function validatePasswords(){
-  const p = passwordEl.value, c = passwordConfirmEl.value;
-  startEncrypt.disabled = !(p && c && p === c && originalArrayBuffer);
-}
-
-/* real encryption: PBKDF2 -> AES-GCM */
-startEncrypt.addEventListener('click', async () => {
-  const password = passwordEl.value;
-  if (!password) return;
-  encProgressSection.classList.remove('hidden');
-  encProgress.style.width = '0%';
-  encProgressText.textContent = 'Preparing encryption...';
-  startEncrypt.disabled = true;
-
-  // stage 1: derive key (progress simulated)
-  await simulateProgressTo(25, 'Deriving key from password...');
-  // derive key
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(password),
-    {name: 'PBKDF2'},
-    false,
-    ['deriveKey']
-  );
-
-  const key = await crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: 200_000,
-      hash: 'SHA-256'
-    },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt','decrypt']
-  );
-
-  await simulateProgressTo(55, 'Encrypting file data...');
-
-  // encrypt the originalArrayBuffer
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const cipherBuffer = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: iv, tagLength: 128 },
-    key,
-    originalArrayBuffer
-  );
-
-  await simulateProgressTo(90, 'Finalizing...');
-
-  // package and show
-  encryptedPackage = {
-    cipherBase64: bufToBase64(cipherBuffer),
-    ivBase64: bufToBase64(iv.buffer),
-    saltBase64: bufToBase64(salt.buffer),
-    algo: 'AES-GCM',
-    tagLength: 128,
-    iterations: 200000
-  };
-
-  // hide progress, show step3
-  encProgress.style.width = '100%';
-  encProgressText.textContent = 'Encryption complete';
-  setTimeout(()=> {
-    encProgressSection.classList.add('hidden');
-    finalizeAfterEncrypt();
-  }, 700);
+  reader.readAsDataURL(file);
 });
 
-async function simulateProgressTo(target, text){
-  // smooth incremental simulation
-  let current = parseFloat(encProgress.style.width) || 0;
-  while(current < target){
-    current += Math.random()*6 + 2;
-    if (current > target) current = target;
-    encProgress.style.width = Math.floor(current)+'%';
-    encProgressText.textContent = text + ' ' + Math.floor(current) + '%';
-    await new Promise(r=>setTimeout(r, Math.random()*160 + 80));
+next1.addEventListener("click", () => showStep(2));
+next2.addEventListener("click", () => showStep(3));
+restart.addEventListener("click", () => window.location.reload());
+
+// Handle filter selection
+applyFilter.addEventListener("click", () => {
+  selectedFilters = Array.from(document.querySelectorAll(".filters input:checked")).map(
+    (i) => i.value
+  );
+  alert("✅ Filters selected: " + (selectedFilters.join(", ") || "None"));
+});
+
+// Encryption process
+encryptBtn.addEventListener("click", async () => {
+  const password = document.getElementById("password").value.trim();
+  if (!password || !imageData) {
+    alert("Please upload an image and enter a password first.");
+    return;
   }
-}
 
-function finalizeAfterEncrypt(){
-  // move to step 3
-  goToStep(3);
-  topProgress.style.width = '100%';
+  const progress = document.getElementById("progress");
+  let percent = 0;
+  const interval = setInterval(() => {
+    percent += 5;
+    progress.style.width = percent + "%";
+    if (percent >= 100) clearInterval(interval);
+  }, 80);
 
-  // show cipher preview (short)
-  cipherPreview.textContent = encryptedPackage.cipherBase64.slice(0,240) + '...';
-  decryptResult.classList.remove('hidden');
-  decryptedImage.classList.add('hidden');
-  decryptStatus.textContent = 'Encrypted package ready. Enter password to decrypt.';
-  tryDecrypt.disabled = false;
-  decryptPassword.value = '';
-  updateTopProgress();
-}
+  const enc = new TextEncoder();
+  const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    pwKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
 
-/* decrypt */
-tryDecrypt.addEventListener('click', async () => {
-  const pw = decryptPassword.value;
-  if (!pw) return;
-  tryDecrypt.disabled = true;
-  decryptStatus.textContent = 'Attempting decryption...';
-  // derive key with stored salt & iterations
-  const saltBuf = base64ToBuf(encryptedPackage.saltBase64);
-  const ivBuf = base64ToBuf(encryptedPackage.ivBase64);
-  const cipherBuf = base64ToBuf(encryptedPackage.cipherBase64);
+  iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = enc.encode(imageData);
+  encryptedData = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
 
-  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), {name:'PBKDF2'},false,['deriveKey']);
-  const key = await crypto.subtle.deriveKey({
-    name:'PBKDF2', salt: saltBuf, iterations: encryptedPackage.iterations, hash:'SHA-256'
-  }, keyMaterial, {name:'AES-GCM', length:256}, true, ['decrypt']);
+  setTimeout(() => {
+    alert("✅ Encryption complete!");
+    next2.classList.remove("hidden");
+  }, 1300);
+});
+
+// Decryption
+decryptBtn.addEventListener("click", async () => {
+  const password = document.getElementById("decryptPassword").value.trim();
+  const dec = new TextDecoder();
+  const status = document.getElementById("decryptStatus");
 
   try {
-    const plainBuf = await crypto.subtle.decrypt({name:'AES-GCM', iv: new Uint8Array(ivBuf)}, key, cipherBuf);
-    // success: show image
-    const blob = new Blob([plainBuf], {type: originalFile.type || 'image/*'});
-    const url = URL.createObjectURL(blob);
-    decryptedImage.src = url;
-    decryptedImage.classList.remove('hidden');
-    decryptStatus.textContent = '✅ Decryption successful — image restored.';
-    cipherPreview.textContent = 'Ciphertext (truncated): ' + encryptedPackage.cipherBase64.slice(0,240) + '...';
-  } catch (e) {
-    decryptStatus.textContent = '❌ Decryption failed — wrong password or corrupted data.';
-    decryptedImage.classList.add('hidden');
-  } finally {
-    tryDecrypt.disabled = false;
+    const enc = new TextEncoder();
+    const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const dKey = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+      pwKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encryptedData);
+    const decryptedText = dec.decode(decrypted);
+
+    const decryptedPreview = document.getElementById("decryptedPreview");
+    decryptedPreview.src = decryptedText;
+
+    // Apply selected filters visually
+    let filterStyle = "";
+    if (selectedFilters.includes("blur")) filterStyle += "blur(4px) ";
+    if (selectedFilters.includes("bw")) filterStyle += "grayscale(100%) ";
+    if (selectedFilters.includes("rotate")) decryptedPreview.style.transform = "rotate(15deg)";
+    if (selectedFilters.includes("fisheye")) filterStyle += "contrast(140%) saturate(120%) ";
+    decryptedPreview.style.filter = filterStyle;
+
+    decryptedPreview.classList.remove("hidden");
+    status.textContent = "✅ Decryption successful!";
+    restart.classList.remove("hidden");
+  } catch {
+    status.textContent = "❌ Wrong password. Access denied.";
   }
 });
 
-/* small enabling/disabling for decrypt button */
-decryptPassword.addEventListener('input', ()=> {
-  tryDecrypt.disabled = !decryptPassword.value;
-});
-
-/* set initial progress */
-function updateTopProgress(){
-  const w = currentStep===1 ? 33 : currentStep===2 ? 66 : 100;
-  topProgress.style.width = w + '%';
+function showStep(n) {
+  document.querySelectorAll(".step").forEach((s) => s.classList.remove("active"));
+  document.getElementById("step" + n).classList.add("active");
 }
-
-/* initialize */
-goToStep(1);
-updateTopProgress();

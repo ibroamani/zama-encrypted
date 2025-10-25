@@ -1,99 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FHE-style Image Encrypt Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Encryption Demo</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="card">
-    <div class="progress-top">
-      <div class="progress-top-bar" id="topProgress"></div>
-    </div>
+  <header>
+    <h1>🔒 Image Encryption & Filter Demo</h1>
+    <p>Upload, encrypt, and apply filters securely.</p>
+  </header>
 
-    <header>
-      <h1>Step 1 → 2 → 3: Image Encrypt & Decrypt</h1>
-    </header>
+  <main>
+    <!-- Step 1 -->
+    <section id="step1" class="step active">
+      <h2>Step 1 — Upload an Image</h2>
+      <label for="fileInput" class="upload-box">
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <div class="upload-text">📤 Click to upload or drop image here</div>
+      </label>
+      <img id="preview" class="hidden" />
+      <button id="next1" class="btn hidden">Next →</button>
+    </section>
 
-    <!-- Step container -->
-    <main>
-      <!-- STEP 1: Upload -->
-      <section id="step1" class="step active">
-        <h2>Step 1 — Upload</h2>
-        <p>Pick an image to encrypt (drag & drop or click).</p>
+    <!-- Step 2 -->
+    <section id="step2" class="step">
+      <h2>Step 2 — Encrypt & Choose Filters</h2>
+      <p>Set a password and choose effects to apply after decryption.</p>
 
-        <div id="dropZone" class="drop-zone">
-          <div class="drop-icon">⬆</div>
-          <div class="drop-text">Drop image here or click to upload</div>
-          <input id="fileInput" type="file" accept="image/*" />
-        </div>
+      <input type="password" id="password" placeholder="Enter password" />
 
-        <div id="previewWrap" class="preview-wrap hidden">
-          <h4>Preview</h4>
-          <img id="filePreview" alt="preview" />
-        </div>
+      <div class="filters">
+        <label><input type="checkbox" value="blur" /> Blur</label>
+        <label><input type="checkbox" value="bw" /> Black & White</label>
+        <label><input type="checkbox" value="fisheye" /> Fisheye</label>
+        <label><input type="checkbox" value="rotate" /> Rotate</label>
+      </div>
 
-        <div class="controls">
-          <button id="toStep2" class="btn primary" disabled>Continue → Set Password</button>
-        </div>
-      </section>
+      <button id="applyFilter" class="btn small">Apply Filter</button>
 
-      <!-- STEP 2: Password & Encrypt -->
-      <section id="step2" class="step">
-        <h2>Step 2 — Set Password & Encrypt</h2>
-        <p>Choose a password to encrypt your image. Use a strong password.</p>
+      <div class="progress-bar">
+        <div id="progress" class="progress"></div>
+      </div>
 
-        <label class="label">
-          Password
-          <input id="password" type="password" placeholder="Enter password" />
-        </label>
+      <button id="encryptBtn" class="btn">Encrypt</button>
+      <button id="next2" class="btn hidden">Next →</button>
+    </section>
 
-        <label class="label">
-          Confirm Password
-          <input id="passwordConfirm" type="password" placeholder="Confirm password" />
-        </label>
+    <!-- Step 3 -->
+    <section id="step3" class="step">
+      <h2>Step 3 — Decrypt & View</h2>
+      <p>Type your password to decrypt and see your image with filters.</p>
 
-        <div id="encProgressSection" class="progress-section hidden">
-          <div class="progress-text" id="encProgressText">Encrypting... 0%</div>
-          <div class="progress-bar">
-            <div id="encProgress" class="progress-fill"></div>
-          </div>
-        </div>
+      <input type="password" id="decryptPassword" placeholder="Enter password" />
+      <button id="decryptBtn" class="btn">Decrypt</button>
 
-        <div class="controls">
-          <button id="backTo1" class="btn">← Back</button>
-          <button id="startEncrypt" class="btn primary" disabled>Encrypt Image</button>
-        </div>
-      </section>
+      <p id="decryptStatus"></p>
+      <img id="decryptedPreview" class="hidden" />
+      <button id="restart" class="btn hidden">Restart Demo</button>
+    </section>
+  </main>
 
-      <!-- STEP 3: Decrypt -->
-      <section id="step3" class="step">
-        <h2>Step 3 — Decrypt & View</h2>
-        <p>Enter the password you used to decrypt the image.</p>
-
-        <label class="label">
-          Enter Password
-          <input id="decryptPassword" type="password" placeholder="Enter password to decrypt" />
-        </label>
-
-        <div class="controls">
-          <button id="backTo2" class="btn">← Back</button>
-          <button id="tryDecrypt" class="btn primary" disabled>Decrypt</button>
-        </div>
-
-        <div id="decryptResult" class="decrypt-result hidden">
-          <h4 id="decryptStatus"></h4>
-          <img id="decryptedImage" class="hidden" alt="decrypted" />
-          <pre id="cipherPreview" class="cipher-preview"></pre>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <small>© Pops — Demo encryption done locally in the browser</small>
-    </footer>
-  </div>
+  <footer>© 2025 Pops | Created by <a href="https://x.com/musty0441" target="_blank">@musty0441</a></footer>
 
   <script src="script.js"></script>
 </body>
