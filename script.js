@@ -1,120 +1,168 @@
-let imageData = null;
-let encryptedData = null;
-let iv = null;
-let key = null;
+let encryptedData, iv, salt;
 let selectedFilters = [];
+let imageBitmap;
 
 const fileInput = document.getElementById("fileInput");
 const preview = document.getElementById("preview");
-const next1 = document.getElementById("next1");
-const next2 = document.getElementById("next2");
+const toEncrypt = document.getElementById("toEncrypt");
+const step1 = document.getElementById("step1");
+const step2 = document.getElementById("step2");
+const step3 = document.getElementById("step3");
 const encryptBtn = document.getElementById("encryptBtn");
+const toDecrypt = document.getElementById("toDecrypt");
 const decryptBtn = document.getElementById("decryptBtn");
-const restart = document.getElementById("restart");
-const applyFilter = document.getElementById("applyFilter");
+const progress = document.getElementById("progress");
+const decryptStatus = document.getElementById("decryptStatus");
+const canvas = document.getElementById("canvas");
+const restartBtn = document.getElementById("restart");
 
-fileInput.addEventListener("change", (e) => {
+fileInput.addEventListener("change", e => {
   const file = e.target.files[0];
+  if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
-    preview.src = reader.result;
+  reader.onload = ev => {
+    preview.src = ev.target.result;
     preview.classList.remove("hidden");
-    next1.classList.remove("hidden");
-    imageData = reader.result;
+    toEncrypt.classList.remove("hidden");
   };
   reader.readAsDataURL(file);
 });
 
-next1.addEventListener("click", () => showStep(2));
-next2.addEventListener("click", () => showStep(3));
-restart.addEventListener("click", () => window.location.reload());
-
-// Handle filter selection
-applyFilter.addEventListener("click", () => {
-  selectedFilters = Array.from(document.querySelectorAll(".filters input:checked")).map(
-    (i) => i.value
-  );
-  alert("✅ Filters selected: " + (selectedFilters.join(", ") || "None"));
+toEncrypt.addEventListener("click", () => {
+  step1.classList.remove("active");
+  step1.classList.add("hidden");
+  step2.classList.add("active");
 });
 
-// Encryption process
 encryptBtn.addEventListener("click", async () => {
-  const password = document.getElementById("password").value.trim();
-  if (!password || !imageData) {
-    alert("Please upload an image and enter a password first.");
+  const password = document.getElementById("password").value;
+  if (!password || !preview.src) {
+    alert("Please upload an image and set a password.");
     return;
   }
 
-  const progress = document.getElementById("progress");
+  selectedFilters = Array.from(document.querySelectorAll(".filters input:checked")).map(c => c.value);
+  progress.style.width = "0%";
+
+  // simulate progress
   let percent = 0;
   const interval = setInterval(() => {
-    percent += 5;
+    percent += 10;
+    progress.style.width = percent + "%";
+    if (percent >= 100) {
+      clearInterval(interval);
+    }
+  }, 150);
+
+  // actual encryption
+  const res = await fetch(preview.src);
+  const blob = await res.blob();
+  const buf = await blob.arrayBuffer();
+  salt = crypto.getRandomValues(new Uint8Array(16));
+  iv = crypto.getRandomValues(new Uint8Array(12));
+
+  const key = await deriveKey(password, salt);
+  encryptedData = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, buf);
+
+  toDecrypt.classList.remove("hidden");
+});
+
+toDecrypt.addEventListener("click", () => {
+  step2.classList.remove("active");
+  step2.classList.add("hidden");
+  step3.classList.add("active");
+});
+
+decryptBtn.addEventListener("click", async () => {
+  const password = document.getElementById("decryptPassword").value;
+  if (!password) return;
+  progress.style.width = "0%";
+  decryptStatus.textContent = "";
+  let percent = 0;
+  const interval = setInterval(() => {
+    percent += 20;
     progress.style.width = percent + "%";
     if (percent >= 100) clearInterval(interval);
-  }, 80);
+  }, 150);
 
+  try {
+    const key = await deriveKey(password, salt);
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encryptedData);
+    const blob = new Blob([decrypted]);
+    const imgURL = URL.createObjectURL(blob);
+    imageBitmap = await createImageBitmap(blob);
+    applyFilters(imageBitmap, selectedFilters);
+    decryptStatus.textContent = "✅ Decryption successful";
+    restartBtn.classList.remove("hidden");
+  } catch {
+    decryptStatus.textContent = "❌ Access denied";
+  }
+});
+
+restartBtn.addEventListener("click", () => location.reload());
+
+async function deriveKey(password, salt) {
   const enc = new TextEncoder();
-  const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  key = await crypto.subtle.deriveKey(
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
     { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
-    pwKey,
+    baseKey,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt"]
   );
+}
 
-  iv = crypto.getRandomValues(new Uint8Array(12));
-  const data = enc.encode(imageData);
-  encryptedData = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+// Draw and apply filters
+function applyFilters(img, filters) {
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
 
-  setTimeout(() => {
-    alert("✅ Encryption complete!");
-    next2.classList.remove("hidden");
-  }, 1300);
-});
-
-// Decryption
-decryptBtn.addEventListener("click", async () => {
-  const password = document.getElementById("decryptPassword").value.trim();
-  const dec = new TextDecoder();
-  const status = document.getElementById("decryptStatus");
-
-  try {
-    const enc = new TextEncoder();
-    const pwKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const dKey = await crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
-      pwKey,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt", "decrypt"]
-    );
-
-    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encryptedData);
-    const decryptedText = dec.decode(decrypted);
-
-    const decryptedPreview = document.getElementById("decryptedPreview");
-    decryptedPreview.src = decryptedText;
-
-    // Apply selected filters visually
-    let filterStyle = "";
-    if (selectedFilters.includes("blur")) filterStyle += "blur(4px) ";
-    if (selectedFilters.includes("bw")) filterStyle += "grayscale(100%) ";
-    if (selectedFilters.includes("rotate")) decryptedPreview.style.transform = "rotate(15deg)";
-    if (selectedFilters.includes("fisheye")) filterStyle += "contrast(140%) saturate(120%) ";
-    decryptedPreview.style.filter = filterStyle;
-
-    decryptedPreview.classList.remove("hidden");
-    status.textContent = "✅ Decryption successful!";
-    restart.classList.remove("hidden");
-  } catch {
-    status.textContent = "❌ Wrong password. Access denied.";
+  if (filters.includes("bw")) {
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < data.data.length; i += 4) {
+      const avg = (data.data[i] + data.data[i + 1] + data.data[i + 2]) / 3;
+      data.data[i] = data.data[i + 1] = data.data[i + 2] = avg;
+    }
+    ctx.putImageData(data, 0, 0);
   }
-});
 
-function showStep(n) {
-  document.querySelectorAll(".step").forEach((s) => s.classList.remove("active"));
-  document.getElementById("step" + n).classList.add("active");
+  if (filters.includes("blur")) ctx.filter = "blur(5px)";
+  if (filters.includes("rotate")) ctx.rotate((10 * Math.PI) / 180);
+
+  if (filters.includes("fisheye")) fisheye(ctx, canvas.width, canvas.height);
+
+  canvas.classList.remove("hidden");
+}
+
+function fisheye(ctx, w, h) {
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const temp = new Uint8ClampedArray(data);
+  const centerX = w / 2,
+    centerY = h / 2,
+    radius = Math.min(w, h) / 2;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < radius) {
+        const r = dist / radius;
+        const theta = Math.atan2(dy, dx);
+        const rn = r * r; // soft bubble
+        const sx = Math.floor(centerX + rn * radius * Math.cos(theta));
+        const sy = Math.floor(centerY + rn * radius * Math.sin(theta));
+        const srcPos = (sy * w + sx) * 4;
+        const dstPos = (y * w + x) * 4;
+        data[dstPos] = temp[srcPos];
+        data[dstPos + 1] = temp[srcPos + 1];
+        data[dstPos + 2] = temp[srcPos + 2];
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
 }
