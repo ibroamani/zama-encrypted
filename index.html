@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FHE-style Image Encrypt Demo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="card">
+    <div class="progress-top">
+      <div class="progress-top-bar" id="topProgress"></div>
+    </div>
+
+    <header>
+      <h1>Step 1 → 2 → 3: Image Encrypt & Decrypt</h1>
+    </header>
+
+    <!-- Step container -->
+    <main>
+      <!-- STEP 1: Upload -->
+      <section id="step1" class="step active">
+        <h2>Step 1 — Upload</h2>
+        <p>Pick an image to encrypt (drag & drop or click).</p>
+
+        <div id="dropZone" class="drop-zone">
+          <div class="drop-icon">⬆</div>
+          <div class="drop-text">Drop image here or click to upload</div>
+          <input id="fileInput" type="file" accept="image/*" />
+        </div>
+
+        <div id="previewWrap" class="preview-wrap hidden">
+          <h4>Preview</h4>
+          <img id="filePreview" alt="preview" />
+        </div>
+
+        <div class="controls">
+          <button id="toStep2" class="btn primary" disabled>Continue → Set Password</button>
+        </div>
+      </section>
+
+      <!-- STEP 2: Password & Encrypt -->
+      <section id="step2" class="step">
+        <h2>Step 2 — Set Password & Encrypt</h2>
+        <p>Choose a password to encrypt your image. Use a strong password.</p>
+
+        <label class="label">
+          Password
+          <input id="password" type="password" placeholder="Enter password" />
+        </label>
+
+        <label class="label">
+          Confirm Password
+          <input id="passwordConfirm" type="password" placeholder="Confirm password" />
+        </label>
+
+        <div id="encProgressSection" class="progress-section hidden">
+          <div class="progress-text" id="encProgressText">Encrypting... 0%</div>
+          <div class="progress-bar">
+            <div id="encProgress" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="backTo1" class="btn">← Back</button>
+          <button id="startEncrypt" class="btn primary" disabled>Encrypt Image</button>
+        </div>
+      </section>
+
+      <!-- STEP 3: Decrypt -->
+      <section id="step3" class="step">
+        <h2>Step 3 — Decrypt & View</h2>
+        <p>Enter the password you used to decrypt the image.</p>
+
+        <label class="label">
+          Enter Password
+          <input id="decryptPassword" type="password" placeholder="Enter password to decrypt" />
+        </label>
+
+        <div class="controls">
+          <button id="backTo2" class="btn">← Back</button>
+          <button id="tryDecrypt" class="btn primary" disabled>Decrypt</button>
+        </div>
+
+        <div id="decryptResult" class="decrypt-result hidden">
+          <h4 id="decryptStatus"></h4>
+          <img id="decryptedImage" class="hidden" alt="decrypted" />
+          <pre id="cipherPreview" class="cipher-preview"></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <small>© Pops — Demo encryption done locally in the browser</small>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

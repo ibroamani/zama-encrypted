@@ -1,0 +1,96 @@
+:root{
+  --bg1:#1f1f1f;
+  --card:#2b2b2b;
+  --accent:#ffc600;
+  --muted:#bfc3d6;
+  --glass: rgba(255,255,255,0.04);
+  --primary:#5563de;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial;color:#eee;background:linear-gradient(90deg,#111,#1a1a1a)}
+.card{
+  width:92%;
+  max-width:1100px;
+  background:var(--card);
+  border-radius:12px;
+  padding:18px;
+  margin:28px auto;
+  box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  position:relative;
+  overflow:hidden;
+}
+
+/* top progress (shows step progression) */
+.progress-top{
+  height:8px;
+  background:rgba(255,255,255,0.06);
+  width:100%;
+  position:absolute;
+  top:0;left:0;
+}
+.progress-top-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--accent),#ffda6a);
+  transition:width 400ms ease;
+}
+
+/* header */
+header{padding:18px 8px}
+h1{margin:0 0 6px;font-size:20px;color:#fff}
+main{display:flex;gap:20px;padding:12px 8px;align-items:flex-start}
+
+/* layout: left column text and right column upload area */
+.step{flex:1;display:none}
+.step.active{display:block}
+
+/* drop zone */
+.drop-zone{
+  background:var(--glass);
+  border:2px dashed rgba(255,255,255,0.06);
+  border-radius:8px;
+  padding:28px;
+  text-align:center;
+  cursor:pointer;
+  transition:transform .15s ease,background .15s ease;
+}
+.drop-zone:hover{transform:translateY(-4px);background:rgba(255,255,255,0.06)}
+.drop-icon{font-size:30px;margin-bottom:6px;color:var(--muted)}
+.drop-text{color:var(--muted)}
+.drop-zone input[type="file"]{display:none}
+
+/* preview */
+.preview-wrap{margin-top:16px;text-align:left}
+.preview-wrap img{max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.04)}
+
+/* controls */
+.controls{display:flex;gap:12px;justify-content:flex-end;margin-top:18px}
+.btn{padding:10px 14px;border-radius:8px;background:transparent;color:#eee;border:1px solid rgba(255,255,255,0.06);cursor:pointer}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:white}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* labels */
+.label{display:block;margin-top:14px;color:var(--muted)}
+.label input{display:block;width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff}
+
+/* encryption progress */
+.progress-section{margin-top:16px}
+.progress-text{color:var(--muted);margin-bottom:6px}
+.progress-bar{height:12px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden}
+.progress-fill{width:0%;height:100%;background:linear-gradient(90deg,var(--accent),#ffd86b);transition:width 120ms linear}
+
+/* decrypt result */
+.decrypt-result{margin-top:16px}
+.decrypt-result h4{color:#fff}
+.decrypt-result img{max-width:100%;margin-top:12px;border-radius:8px}
+.cipher-preview{background:rgba(255,255,255,0.03);padding:10px;margin-top:12px;border-radius:6px;color:#ddd;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow:auto}
+
+/* footer */
+footer{margin-top:18px;padding:10px;text-align:center;color:var(--muted);font-size:13px}
+
+/* responsive */
+@media (max-width:900px){
+  main{padding:6px;flex-direction:column}
+  .controls{justify-content:center}
+}
